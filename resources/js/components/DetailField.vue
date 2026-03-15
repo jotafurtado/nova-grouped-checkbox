@@ -1,0 +1,51 @@
+<template>
+  <PanelItem :index="index" :field="field">
+    <template #value>
+      <div v-if="filteredGroups.length === 0" class="text-gray-400 text-sm">
+        Nenhuma permissão atribuída
+      </div>
+
+      <div v-else class="space-y-3">
+        <div
+          v-for="(group, groupIndex) in filteredGroups"
+          :key="groupIndex"
+        >
+          <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+            {{ group.label }}
+          </h4>
+          <div class="flex flex-wrap gap-1">
+            <span
+              v-for="item in group.selectedItems"
+              :key="item.id"
+              class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+            >
+              {{ item.label }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </template>
+  </PanelItem>
+</template>
+
+<script>
+export default {
+  props: ['index', 'resource', 'resourceName', 'resourceId', 'field'],
+
+  computed: {
+    selectedIds() {
+      return new Set((this.field.value || []).map(Number))
+    },
+
+    filteredGroups() {
+      const groups = this.field.groups || []
+      return groups
+        .map(group => ({
+          label: group.label,
+          selectedItems: group.items.filter(item => this.selectedIds.has(item.id)),
+        }))
+        .filter(group => group.selectedItems.length > 0)
+    },
+  },
+}
+</script>
