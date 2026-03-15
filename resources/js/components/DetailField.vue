@@ -1,11 +1,12 @@
 <template>
   <PanelItem :index="index" :field="field">
     <template #value>
-      <div v-if="filteredGroups.length === 0" class="text-gray-400 text-sm">
-        Nenhuma permissão atribuída
+      <div v-if="selectedItems.length === 0" class="text-gray-400 text-sm">
+        Nenhum item selecionado
       </div>
 
-      <div v-else class="space-y-3">
+      <!-- Grouped mode -->
+      <div v-else-if="isGrouped" class="space-y-3">
         <div
           v-for="(group, groupIndex) in filteredGroups"
           :key="groupIndex"
@@ -24,6 +25,17 @@
           </div>
         </div>
       </div>
+
+      <!-- Flat mode -->
+      <div v-else class="flex flex-wrap gap-1">
+        <span
+          v-for="item in selectedItems"
+          :key="item.id"
+          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+        >
+          {{ item.label }}
+        </span>
+      </div>
     </template>
   </PanelItem>
 </template>
@@ -33,7 +45,11 @@ export default {
   props: ['index', 'resource', 'resourceName', 'resourceId', 'field'],
 
   computed: {
-    selectedIds() {
+    isGrouped() {
+      return this.field.grouped !== false
+    },
+
+    selectedIdSet() {
       return new Set((this.field.value || []).map(Number))
     },
 
@@ -42,9 +58,17 @@ export default {
       return groups
         .map(group => ({
           label: group.label,
-          selectedItems: group.items.filter(item => this.selectedIds.has(item.id)),
+          selectedItems: group.items.filter(item => this.selectedIdSet.has(item.id)),
         }))
         .filter(group => group.selectedItems.length > 0)
+    },
+
+    selectedItems() {
+      if (this.isGrouped) {
+        return this.filteredGroups.flatMap(g => g.selectedItems)
+      }
+      const items = this.field.groups || []
+      return items.filter(item => this.selectedIdSet.has(item.id))
     },
   },
 }

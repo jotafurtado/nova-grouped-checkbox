@@ -2,12 +2,9 @@
 
 namespace NovaBrFields\GroupedCheckbox;
 
-use App\Models\Permission;
-use App\Services\PermissionGrouper;
 use Closure;
 use Laravel\Nova\Fields\Field;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Spatie\Permission\PermissionRegistrar;
 
 class GroupedCheckbox extends Field
 {
@@ -17,9 +14,9 @@ class GroupedCheckbox extends Field
     public $component = 'grouped-checkbox';
 
     /**
-     * Closure that returns the grouped items array.
+     * Closure that returns the options (grouped or flat).
      */
-    protected ?Closure $groupsResolver = null;
+    protected ?Closure $optionsResolver = null;
 
     /**
      * Closure that syncs selected IDs to the model.
@@ -32,11 +29,39 @@ class GroupedCheckbox extends Field
     protected ?Closure $selectedIdsResolver = null;
 
     /**
-     * Set the closure that provides grouped items.
+     * The formatted string for the index view.
+     */
+    protected string|Closure|null $indexLabel = null;
+
+    /**
+     * Set the options as grouped items.
+     *
+     * Expected format:
+     * [
+     *   ['label' => 'Group Name', 'items' => [['id' => 1, 'label' => 'Item']]],
+     * ]
      */
     public function groups(Closure $callback): static
     {
-        $this->groupsResolver = $callback;
+        $this->optionsResolver = $callback;
+        $this->withMeta(['grouped' => true]);
+
+        return $this;
+    }
+
+    /**
+     * Set the options as a flat list (no grouping).
+     *
+     * Expected format:
+     * [
+     *   ['id' => 1, 'label' => 'Item A'],
+     *   ['id' => 2, 'label' => 'Item B'],
+     * ]
+     */
+    public function options(Closure $callback): static
+    {
+        $this->optionsResolver = $callback;
+        $this->withMeta(['grouped' => false]);
 
         return $this;
     }
@@ -66,27 +91,45 @@ class GroupedCheckbox extends Field
     }
 
     /**
+     * Set the label displayed on the index view.
+     *
+     * Accepts a static string or a closure that receives the count.
+     * Example: ->indexLabel(fn (int $count) => "{$count} itens")
+     */
+    public function indexLabel(string|Closure $label): static
+    {
+        $this->indexLabel = $label;
+
+        return $this;
+    }
+
+    /**
      * Resolve the field's value for display.
      */
     public function resolve($resource, $attribute = null): void
     {
-        if ($this->groupsResolver === null) {
+        if ($this->optionsResolver === null) {
             throw new \LogicException(
-                'GroupedCheckbox: groups callback is not defined. Call groups() before resolving.'
+                'GroupedCheckbox: options not defined. Call groups() or options() before resolving.'
             );
         }
 
-        $groups = call_user_func($this->groupsResolver);
+        $options = call_user_func($this->optionsResolver);
 
         $selectedIds = $this->selectedIdsResolver
             ? call_user_func($this->selectedIdsResolver, $resource)
             : [];
 
-        $this->withMeta(['groups' => $groups]);
+        $this->withMeta(['groups' => $options]);
         $this->value = $selectedIds;
 
         $count = count($selectedIds);
-        $this->withMeta(['indexValue' => "{$count} permissões"]);
+        $indexValue = match (true) {
+            $this->indexLabel instanceof Closure => call_user_func($this->indexLabel, $count),
+            is_string($this->indexLabel) => $this->indexLabel,
+            default => (string) $count,
+        };
+        $this->withMeta(['indexValue' => $indexValue]);
     }
 
     /**
@@ -119,63 +162,5 @@ class GroupedCheckbox extends Field
         return function () use ($model, $ids, $syncCallback) {
             call_user_func($syncCallback, $model, $ids);
         };
-    }
-
-    /**
-     * Create a GroupedCheckbox pre-configured for Spatie Permissions.
-     */
-    public static function forPermissions(string $label = 'Permissões'): static
-    {
-        $field = new static($label, 'permissions');
-
-        $field->groups(function () {
-            $permissions = Permission::with('permissionCategory')->get();
-            $grouped = PermissionGrouper::group($permissions);
-
-            return collect($grouped)->map(fn (array $group) => [
-                'label' => $group['label'],
-                'items' => collect($group['permissions'])->map(fn (Permission $p) => [
-                    'id' => $p->id,
-                    'label' => static::formatPermissionLabel($p, $group),
-                ])->values()->all(),
-            ])->values()->all();
-        });
-
-        $field->selectedUsing(fn (object $model) => $model->permissions->pluck('id')->all());
-
-        $field->syncUsing(function (object $model, array $ids) {
-            $model->syncPermissions(
-                Permission::whereIn('id', $ids)->get()
-            );
-            app(PermissionRegistrar::class)->forgetCachedPermissions();
-        });
-
-        return $field;
-    }
-
-    /**
-     * Format a permission label using PermissionGrouper mappings.
-     */
-    protected static function formatPermissionLabel(Permission $permission, array $group): string
-    {
-        $parsed = PermissionGrouper::parsePermission($permission->name);
-
-        if ($parsed['action'] === null || $parsed['resource'] === null) {
-            return $permission->name;
-        }
-
-        $resourceLabel = PermissionGrouper::getResourceLabel($parsed['resource']);
-        $actionLabel = PermissionGrouper::getActionLabel($parsed['action']);
-
-        $resources = collect($group['permissions'])
-            ->map(fn (Permission $p) => PermissionGrouper::parsePermission($p->name)['resource'])
-            ->filter()
-            ->unique();
-
-        if ($resources->count() > 1) {
-            return "{$resourceLabel} — {$actionLabel}";
-        }
-
-        return $actionLabel;
     }
 }

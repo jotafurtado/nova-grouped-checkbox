@@ -6,17 +6,17 @@
     :full-width-content="fullWidthContent"
   >
     <template #field>
-      <div v-if="!groups || groups.length === 0" class="text-gray-500 text-sm">
+      <div v-if="!items || items.length === 0" class="text-gray-500 text-sm">
         Nenhum item disponível
       </div>
 
-      <div v-else class="space-y-4">
+      <!-- Grouped mode -->
+      <div v-else-if="isGrouped" class="space-y-4">
         <div
-          v-for="(group, groupIndex) in groups"
+          v-for="(group, groupIndex) in items"
           :key="groupIndex"
           class="border border-gray-200 dark:border-gray-700 rounded-lg p-3"
         >
-          <!-- Group header with Select All -->
           <label
             class="flex items-center gap-2 mb-2 cursor-pointer font-semibold text-sm text-gray-700 dark:text-gray-300"
           >
@@ -33,7 +33,6 @@
             </span>
           </label>
 
-          <!-- Individual checkboxes -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 ml-5">
             <label
               v-for="item in group.items"
@@ -51,6 +50,24 @@
             </label>
           </div>
         </div>
+      </div>
+
+      <!-- Flat mode (no grouping) -->
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
+        <label
+          v-for="item in items"
+          :key="item.id"
+          class="flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+        >
+          <input
+            type="checkbox"
+            :value="item.id"
+            :checked="selectedIds.has(item.id)"
+            class="checkbox"
+            @change="toggleItem(item.id, $event.target.checked)"
+          />
+          {{ item.label }}
+        </label>
       </div>
     </template>
   </DefaultField>
@@ -71,7 +88,11 @@ export default {
   },
 
   computed: {
-    groups() {
+    isGrouped() {
+      return this.currentField.grouped !== false
+    },
+
+    items() {
       return this.currentField.groups || []
     },
   },
@@ -95,7 +116,6 @@ export default {
       } else {
         this.selectedIds.delete(id)
       }
-      // Force reactivity
       this.selectedIds = new Set(this.selectedIds)
     },
 
@@ -112,9 +132,7 @@ export default {
 
     getSelectAllState(items) {
       if (!items || items.length === 0) return 'unchecked'
-
       const selectedCount = items.filter(item => this.selectedIds.has(item.id)).length
-
       if (selectedCount === 0) return 'unchecked'
       if (selectedCount === items.length) return 'checked'
       return 'indeterminate'
