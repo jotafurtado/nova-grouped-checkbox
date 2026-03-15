@@ -11,14 +11,14 @@
           v-for="(group, groupIndex) in filteredGroups"
           :key="groupIndex"
         >
-          <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+          <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-200 uppercase tracking-wide mb-1">
             {{ group.label }}
           </h4>
           <div class="flex flex-wrap gap-1">
             <span
               v-for="item in group.selectedItems"
               :key="item.id"
-              class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+              class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-500/20 dark:text-primary-200"
             >
               {{ item.label }}
             </span>
@@ -31,7 +31,7 @@
         <span
           v-for="item in selectedItems"
           :key="item.id"
-          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-500/20 dark:text-primary-200"
         >
           {{ item.label }}
         </span>

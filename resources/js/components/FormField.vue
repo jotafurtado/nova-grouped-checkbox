@@ -18,7 +18,7 @@
           class="border border-gray-200 dark:border-gray-700 rounded-lg p-3"
         >
           <label
-            class="flex items-center gap-2 mb-2 cursor-pointer font-semibold text-sm text-gray-700 dark:text-gray-300"
+            class="flex items-center gap-2 mb-2 cursor-pointer font-semibold text-sm text-gray-700 dark:text-gray-100"
           >
             <input
               type="checkbox"
