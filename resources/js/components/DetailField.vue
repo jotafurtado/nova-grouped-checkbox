@@ -18,7 +18,7 @@
             <span
               v-for="item in group.selectedItems"
               :key="item.id"
-              class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-500/20 dark:text-primary-200"
+              class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 dark:bg-gray-700 dark:text-gray-100"
             >
               {{ item.label }}
             </span>
@@ -31,7 +31,7 @@
         <span
           v-for="item in selectedItems"
           :key="item.id"
-          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-500/20 dark:text-primary-200"
+          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 dark:bg-gray-700 dark:text-gray-100"
         >
           {{ item.label }}
         </span>
